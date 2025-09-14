@@ -1,0 +1,93 @@
+const express = require('express');
+const axios = require('axios');
+const router = express.Router();
+const User = require('../models/User');
+const Movie = require('../models/Movie');
+
+// Generate recommendations
+router.post('/recommendations', async (req, res) => {
+  try {
+    const { userId, inputItem, domain = 'movies', count = 5 } = req.body;
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Cold start handling - if user has no preferences
+    if (!user.preferences || user.preferences.genres.length === 0) {
+      const popularMovies = await Movie.find()
+        .sort({ avgrating: -1, likedpercent: -1 })
+        .limit(count);
+      
+      return res.json({
+        type: 'cold_start',
+        message: 'Popular recommendations for new user',
+        recommendations: popularMovies,
+        user: user.username
+      });
+    }
+
+    try {
+      // Call Flask ML microservice
+      const mlResponse = await axios.post('http://localhost:8000/ml/recommend', {
+        userId,
+        inputItem,
+        domain,
+        count,
+        userPreferences: user.preferences
+      }, {
+        timeout: 10000 // 10 second timeout
+      });
+      
+      res.json({
+        type: 'personalized',
+        message: 'ML-powered recommendations',
+        recommendations: mlResponse.data,
+        user: user.username
+      });
+      
+    } catch (mlError) {
+      console.log('ML service unavailable, falling back to content-based');
+      
+      // Fallback to content-based recommendations
+      const fallbackMovies = await Movie.find({
+        genre: { $in: user.preferences.genres }
+      }).sort({ avgrating: -1 }).limit(count);
+      
+      res.json({
+        type: 'fallback',
+        message: 'Content-based recommendations (ML service unavailable)',
+        recommendations: fallbackMovies,
+        user: user.username
+      });
+    }
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user's recommendation history
+router.get('/recommendations/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      message: `Recommendation history for ${user.username}`,
+      preferences: user.preferences,
+      // Add history retrieval logic here
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
