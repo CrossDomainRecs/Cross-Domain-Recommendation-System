@@ -9,10 +9,10 @@ class RecommendationController {
     
     async getRecommendations(req, res) {
         try {
-            // ✅ Use authenticated user from JWT token (more secure)
+            // ✅ Use authenticated user from JWT token
             const userId = req.user.userId;
             const userPreferences = req.user.preferences;
-            const { domain = 'movies', count = 5, inputItem } = req.body;
+            const { domain = 'movies', count = 5 } = req.body;
             
             console.log(`🎯 Getting recommendations for authenticated user: ${req.user.username} (${userId}), domain: ${domain}`);
             
@@ -32,83 +32,152 @@ class RecommendationController {
                 });
             }
             
-            // Use most recent preferences (either from JWT or database)
-            const currentPreferences = user.preferences || userPreferences || { genres: [], domains: ['movies'] };
-            
-            // Handle cold start users (no preferences set)
-            if (!currentPreferences || currentPreferences.genres.length === 0) {
-                console.log(`❄️ Cold start user: ${user.username}`);
-                return await this.handleColdStartRecommendations(res, domain, validatedCount, user);
-            }
-            
-            // Try ML-powered recommendations first
+            // Mock recommendations for Week-VI demo (replacing ML/database calls)
+            const mockRecommendations = {
+                movies: [
+                    {
+                        id: "movie_1",
+                        title: "The Shawshank Redemption",
+                        genre: ["Drama"],
+                        avgrating: 9.3,
+                        reason: "Highly rated drama film",
+                        score: 0.95
+                    },
+                    {
+                        id: "movie_2", 
+                        title: "The Godfather",
+                        genre: ["Crime", "Drama"],
+                        avgrating: 9.2,
+                        reason: "Classic crime masterpiece",
+                        score: 0.92
+                    },
+                    {
+                        id: "movie_3",
+                        title: "The Dark Knight", 
+                        genre: ["Action", "Crime"],
+                        avgrating: 9.0,
+                        reason: "Popular superhero film",
+                        score: 0.90
+                    },
+                    {
+                        id: "movie_4",
+                        title: "Pulp Fiction",
+                        genre: ["Crime", "Drama"], 
+                        avgrating: 8.9,
+                        reason: "Cult classic",
+                        score: 0.89
+                    },
+                    {
+                        id: "movie_5",
+                        title: "Forrest Gump",
+                        genre: ["Drama", "Romance"],
+                        avgrating: 8.8,
+                        reason: "Heartwarming story",
+                        score: 0.88
+                    }
+                ],
+                books: [
+                    {
+                        id: "book_1",
+                        title: "To Kill a Mockingbird",
+                        author: "Harper Lee",
+                        genre: ["Fiction", "Drama"],
+                        avgrating: 4.3,
+                        reason: "Classic American literature",
+                        score: 0.93
+                    },
+                    {
+                        id: "book_2",
+                        title: "1984", 
+                        author: "George Orwell",
+                        genre: ["Dystopian", "Fiction"],
+                        avgrating: 4.2,
+                        reason: "Dystopian masterpiece",
+                        score: 0.92
+                    },
+                    {
+                        id: "book_3",
+                        title: "Pride and Prejudice",
+                        author: "Jane Austen", 
+                        genre: ["Romance", "Fiction"],
+                        avgrating: 4.1,
+                        reason: "Timeless romance classic",
+                        score: 0.91
+                    }
+                ],
+                music: [
+                    {
+                        id: "music_1",
+                        title: "Bohemian Rhapsody",
+                        artist: "Queen",
+                        genre: ["Rock"],
+                        avgrating: 4.8,
+                        reason: "Iconic rock anthem", 
+                        score: 0.98
+                    },
+                    {
+                        id: "music_2",
+                        title: "Hotel California",
+                        artist: "Eagles",
+                        genre: ["Rock"],
+                        avgrating: 4.7,
+                        reason: "Classic rock hit",
+                        score: 0.97
+                    },
+                    {
+                        id: "music_3", 
+                        title: "Imagine",
+                        artist: "John Lennon",
+                        genre: ["Pop", "Folk"],
+                        avgrating: 4.6,
+                        reason: "Timeless peace anthem",
+                        score: 0.96
+                    }
+                ]
+            };
+
+            // Get recommendations for the requested domain
+            const availableRecs = mockRecommendations[domain.toLowerCase()] || mockRecommendations.movies;
+            const recommendations = availableRecs.slice(0, validatedCount);
+
+            // Track recommendation generation (optional for demo)
             try {
-                console.log(`🤖 Calling ML service for ${user.username}`);
-                const recommendations = await this.getMLRecommendations(
-                    userId, 
-                    inputItem, 
-                    domain, 
-                    validatedCount, 
-                    currentPreferences
-                );
-                
-                // Track successful recommendation generation
-                await this.trackRecommendationGenerated(userId, domain, recommendations.length, 'ml_powered');
-                
-                return res.json({
-                    success: true,
-                    data: {
-                        type: 'personalized',
-                        message: 'ML-powered personalized recommendations',
-                        recommendations: recommendations,
-                        user: user.username,
-                        domain: domain,
-                        total_count: recommendations.length,
-                        source: 'ml_service'
-                    },
-                    timestamp: new Date().toISOString()
-                });
-                
-            } catch (mlError) {
-                console.log(`⚠️ ML service unavailable for ${user.username}, falling back to content-based`);
-                console.error('ML Error:', mlError.message);
-                
-                // Fallback to content-based recommendations
-                const fallbackRecommendations = await this.getContentBasedRecommendations(
-                    currentPreferences, 
-                    domain, 
-                    validatedCount,
-                    userId
-                );
-                
-                // Track fallback recommendation generation
-                await this.trackRecommendationGenerated(userId, domain, fallbackRecommendations.length, 'content_based');
-                
-                return res.json({
-                    success: true,
-                    data: {
-                        type: 'fallback',
-                        message: 'Content-based recommendations (ML service unavailable)',
-                        recommendations: fallbackRecommendations,
-                        user: user.username,
-                        domain: domain,
-                        total_count: fallbackRecommendations.length,
-                        source: 'content_based',
-                        fallback_reason: 'ml_service_error'
-                    },
-                    timestamp: new Date().toISOString()
-                });
+                await this.trackRecommendationGenerated(userId, domain, recommendations.length, 'demo_data');
+            } catch (trackError) {
+                console.log('⚠️ Tracking failed, but continuing with recommendations');
             }
-            
+
+            // Return successful response
+            return res.json({
+                success: true,
+                data: {
+                    type: 'demo_recommendations',
+                    message: `Sample ${domain} recommendations for Week-VI milestone demonstration`,
+                    recommendations: recommendations,
+                    user: user.username,
+                    domain: domain,
+                    total_count: recommendations.length,
+                    source: 'mock_data_for_week6_demo',
+                    authentication: {
+                        user_id: userId,
+                        user_role: req.user.role,
+                        authenticated: true
+                    }
+                },
+                timestamp: new Date().toISOString()
+            });
+
         } catch (error) {
             console.error('❌ Error getting recommendations:', error.message);
+            console.error('❌ Stack trace:', error.stack);
             
             res.status(500).json({
                 success: false,
                 error: {
                     code: 'RECOMMENDATION_ERROR',
                     message: 'Failed to get recommendations',
-                    user: req.user?.username || 'unknown'
+                    user: req.user?.username || 'unknown',
+                    details: error.message
                 },
                 timestamp: new Date().toISOString()
             });
@@ -134,17 +203,26 @@ class RecommendationController {
                 });
             }
             
-            // Get user's interaction history from History model
-            const userHistory = await History.find({ user_id: userId })
-                .sort({ timestamp: -1 })
-                .limit(100)
-                .populate('movie_id', 'title genre avgrating')
-                .populate('book_id', 'title author genre avgrating') 
-                .populate('music_id', 'title singers genre avgrating');
-            
-            // Aggregate history stats
-            const historyStats = await this.getUserHistoryStats(userId);
-            
+            // Mock history data for demo
+            const mockHistory = [
+                {
+                    _id: "hist_1",
+                    action: "recommendation_generated",
+                    timestamp: new Date(),
+                    metadata: { domain: "movies", count: 5, type: "demo_data" }
+                }
+            ];
+
+            const mockStats = {
+                actionBreakdown: [
+                    { _id: "recommendation_generated", count: 1 }
+                ],
+                domainBreakdown: [
+                    { _id: "movies", count: 1 }
+                ],
+                totalInteractions: 1
+            };
+
             res.json({
                 success: true,
                 data: {
@@ -154,9 +232,9 @@ class RecommendationController {
                         username: user.username,
                         preferences: user.preferences
                     },
-                    history: userHistory,
-                    stats: historyStats,
-                    total_interactions: userHistory.length
+                    history: mockHistory,
+                    stats: mockStats,
+                    total_interactions: mockHistory.length
                 },
                 timestamp: new Date().toISOString()
             });
@@ -174,44 +252,26 @@ class RecommendationController {
         }
     }
     
-    // Helper method: Handle cold start users
+    // Helper method: Handle cold start users (simplified for demo)
     async handleColdStartRecommendations(res, domain, count, user) {
         try {
-            let popularItems;
-            
-            switch (domain.toLowerCase()) {
-                case 'movies':
-                    popularItems = await Movie.find()
-                        .sort({ avgrating: -1, likedpercent: -1 })
-                        .limit(count);
-                    break;
-                case 'books':
-                    popularItems = await Book.find()
-                        .sort({ avgrating: -1, likedpercent: -1 })
-                        .limit(count);
-                    break;
-                case 'music':
-                    popularItems = await Music.find()
-                        .sort({ avgrating: -1, likedpercent: -1 })
-                        .limit(count);
-                    break;
-                default:
-                    throw new Error(`Unsupported domain: ${domain}`);
-            }
-            
-            // Track cold start recommendation
-            await this.trackRecommendationGenerated(user._id, domain, popularItems.length, 'cold_start');
-            
+            // Return mock popular items instead of database query
+            const mockPopularItems = [
+                { id: "popular_1", title: `Popular ${domain} 1`, avgrating: 8.5 },
+                { id: "popular_2", title: `Popular ${domain} 2`, avgrating: 8.3 },
+                { id: "popular_3", title: `Popular ${domain} 3`, avgrating: 8.1 }
+            ].slice(0, count);
+
             return res.json({
                 success: true,
                 data: {
                     type: 'cold_start',
                     message: 'Popular recommendations for new user',
-                    recommendations: popularItems,
+                    recommendations: mockPopularItems,
                     user: user.username,
                     domain: domain,
-                    total_count: popularItems.length,
-                    source: 'popularity_based'
+                    total_count: mockPopularItems.length,
+                    source: 'popularity_based_demo'
                 },
                 timestamp: new Date().toISOString()
             });
@@ -221,180 +281,72 @@ class RecommendationController {
         }
     }
     
-    // Helper method: Call ML service
+    // Helper method: Call ML service (disabled for demo)
     async getMLRecommendations(userId, inputItem, domain, count, preferences) {
-        const mlResponse = await axios.post('http://localhost:8000/ml/recommend', {
-            userId,
-            inputItem,
-            domain,
-            count,
-            userPreferences: preferences
-        }, {
-            timeout: 10000,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        return mlResponse.data;
+        // For demo, always throw error to trigger fallback
+        throw new Error('ML service not available in demo mode');
     }
     
-    // Helper method: Content-based fallback recommendations  
+    // Helper method: Content-based fallback recommendations (simplified)
     async getContentBasedRecommendations(preferences, domain, count, userId) {
         try {
-            let recommendations;
-            const userGenres = preferences.genres || [];
-            
-            if (userGenres.length === 0) {
-                // If no genre preferences, fall back to popular items
-                return await this.getPopularRecommendations(domain, count);
-            }
-            
-            switch (domain.toLowerCase()) {
-                case 'movies':
-                    recommendations = await Movie.find({
-                        genre: { $in: userGenres }
-                    })
-                    .sort({ avgrating: -1, likedpercent: -1 })
-                    .limit(count);
-                    break;
-                    
-                case 'books':
-                    recommendations = await Book.find({
-                        genre: { $in: userGenres }
-                    })
-                    .sort({ avgrating: -1, likedpercent: -1 })
-                    .limit(count);
-                    break;
-                    
-                case 'music':
-                    recommendations = await Music.find({
-                        genre: { $in: userGenres }
-                    })
-                    .sort({ avgrating: -1, likedpercent: -1 })
-                    .limit(count);
-                    break;
-                    
-                default:
-                    throw new Error(`Unsupported domain: ${domain}`);
-            }
-            
-            // If not enough genre-based results, supplement with popular items
-            if (recommendations.length < count) {
-                const additionalCount = count - recommendations.length;
-                const popularItems = await this.getPopularRecommendations(domain, additionalCount);
-                
-                // Combine and remove duplicates
-                const existingIds = recommendations.map(item => item._id.toString());
-                const newItems = popularItems.filter(item => 
-                    !existingIds.includes(item._id.toString())
-                );
-                
-                recommendations = [...recommendations, ...newItems.slice(0, additionalCount)];
-            }
-            
-            return recommendations;
+            // Return mock content-based recommendations
+            const mockContentRecs = [
+                { id: "content_1", title: `${domain} matching your preferences`, score: 0.85 },
+                { id: "content_2", title: `Similar ${domain} content`, score: 0.80 }
+            ].slice(0, count);
+
+            return mockContentRecs;
             
         } catch (error) {
             console.error('Content-based recommendation error:', error);
-            // Final fallback to popular items
             return await this.getPopularRecommendations(domain, count);
         }
     }
     
-    // Helper method: Popular items fallback
+    // Helper method: Popular items fallback (simplified)
     async getPopularRecommendations(domain, count) {
-        let Model;
-        switch (domain.toLowerCase()) {
-            case 'movies': Model = Movie; break;
-            case 'books': Model = Book; break;
-            case 'music': Model = Music; break;
-            default: Model = Movie; // Default to movies
-        }
-        
-        return await Model.find()
-            .sort({ avgrating: -1, likedpercent: -1 })
-            .limit(count);
+        return [
+            { id: "fallback_1", title: `Fallback ${domain} 1`, avgrating: 8.0 },
+            { id: "fallback_2", title: `Fallback ${domain} 2`, avgrating: 7.8 }
+        ].slice(0, count);
     }
     
-    // Helper method: Track recommendation generation
+    // Helper method: Track recommendation generation (simplified)
     async trackRecommendationGenerated(userId, domain, count, type) {
         try {
-            const historyRecord = new History({
-                user_id: userId,
-                action: 'recommendation_generated',
-                metadata: {
-                    domain: domain,
-                    count: count,
-                    type: type,
-                    timestamp: new Date()
-                }
-            });
-            
-            await historyRecord.save();
-            console.log(`📝 Tracked recommendation: ${type} for user ${userId}`);
-            
+            console.log(`📝 Tracked recommendation: ${type} for user ${userId} (${count} ${domain})`);
+            // In real implementation, this would save to History model
+            // For demo, just log it
         } catch (error) {
             console.error('❌ Failed to track recommendation:', error.message);
             // Don't fail the main request if tracking fails
         }
     }
     
-    // Helper method: Get user history statistics
+    // Helper method: Get user history statistics (simplified)
     async getUserHistoryStats(userId) {
         try {
-            const stats = await History.aggregate([
-                { $match: { user_id: mongoose.Types.ObjectId(userId) } },
-                { $group: {
-                    _id: '$action',
-                    count: { $sum: 1 }
-                }},
-                { $group: {
-                    _id: null,
-                    actions: { $push: { action: '$_id', count: '$count' } },
-                    totalInteractions: { $sum: '$count' }
-                }}
-            ]);
-            
-            const domainStats = await History.aggregate([
-                { $match: { user_id: mongoose.Types.ObjectId(userId) } },
-                { $project: {
-                    domain: {
-                        $cond: [
-                            { $ne: ['$movie_id', null] }, 'movies',
-                            { $cond: [
-                                { $ne: ['$book_id', null] }, 'books',
-                                { $cond: [
-                                    { $ne: ['$music_id', null] }, 'music',
-                                    'unknown'
-                                ]}
-                            ]}
-                        ]
-                    }
-                }},
-                { $group: {
-                    _id: '$domain',
-                    count: { $sum: 1 }
-                }}
-            ]);
-            
+            // Return mock stats for demo
             return {
-                actions: stats[0]?.actions || [],
-                totalInteractions: stats[0]?.totalInteractions || 0,
-                domainBreakdown: domainStats
+                actionBreakdown: [
+                    { _id: "recommendation_generated", count: 5, avgRating: null },
+                    { _id: "view", count: 3, avgRating: null }
+                ],
+                domainBreakdown: [
+                    { _id: "movies", count: 4 },
+                    { _id: "books", count: 4 }
+                ],
+                totalInteractions: 8
             };
             
         } catch (error) {
-            console.error('❌ Error getting user stats:', error);
-            return {
-                actions: [],
-                totalInteractions: 0,
-                domainBreakdown: []
-            };
+            console.error('❌ Error calculating user stats:', error);
+            return { actionBreakdown: [], domainBreakdown: [], totalInteractions: 0 };
         }
     }
     
-    // New method: Track user interactions (for improving recommendations)
+    // New method: Track user interactions (simplified for demo)
     async trackInteraction(req, res) {
         try {
             const userId = req.user.userId;
@@ -426,59 +378,18 @@ class RecommendationController {
                     timestamp: new Date().toISOString()
                 });
             }
-            
-            // Create history record
-            const historyData = {
-                user_id: userId,
-                action: action,
-                timestamp: new Date()
-            };
-            
-            // Add the appropriate item reference
-            switch (itemType.toLowerCase()) {
-                case 'movie':
-                    historyData.movie_id = itemId;
-                    break;
-                case 'book':
-                    historyData.book_id = itemId;
-                    break;
-                case 'music':
-                    historyData.music_id = itemId;
-                    break;
-                default:
-                    return res.status(400).json({
-                        success: false,
-                        error: {
-                            code: 'INVALID_ITEM_TYPE',
-                            message: 'itemType must be movie, book, or music'
-                        },
-                        timestamp: new Date().toISOString()
-                    });
-            }
-            
-            // Add rating if provided
-            if (action === 'rate') {
-                historyData.rating = rating;
-            }
-            
-            const historyRecord = new History(historyData);
-            await historyRecord.save();
-            
-            // Update item analytics asynchronously (don't wait for this)
-            this.updateItemAnalytics(itemId, itemType, action, rating).catch(error => {
-                console.error('❌ Failed to update item analytics:', error.message);
-            });
-            
+
+            // For demo, just return success without database operations
             res.json({
                 success: true,
                 data: {
-                    message: 'Interaction tracked successfully',
+                    message: 'Interaction tracked successfully (demo mode)',
                     interaction: {
                         action: action,
                         itemType: itemType,
                         itemId: itemId,
                         rating: rating || null,
-                        timestamp: historyRecord.timestamp
+                        timestamp: new Date()
                     }
                 },
                 timestamp: new Date().toISOString()
@@ -498,141 +409,13 @@ class RecommendationController {
         }
     }
     
-    // Helper method: Update item analytics (avgrating, likedpercent)
+    // Helper method: Update item analytics (simplified for demo)
     async updateItemAnalytics(itemId, itemType, action, rating) {
         try {
-            let Model;
-            switch (itemType.toLowerCase()) {
-                case 'movie': Model = Movie; break;
-                case 'book': Model = Book; break;
-                case 'music': Model = Music; break;
-                default: return;
-            }
-            
-            // Update average rating if this was a rating action
-            if (action === 'rate' && rating) {
-                const ratingStats = await History.aggregate([
-                    { 
-                        $match: { 
-                            [`${itemType.toLowerCase()}_id`]: mongoose.Types.ObjectId(itemId),
-                            rating: { $exists: true }
-                        }
-                    },
-                    {
-                        $group: {
-                            _id: null,
-                            avgRating: { $avg: '$rating' },
-                            totalRatings: { $sum: 1 }
-                        }
-                    }
-                ]);
-                
-                if (ratingStats.length > 0) {
-                    await Model.updateOne(
-                        { _id: itemId },
-                        { avgrating: Math.round(ratingStats[0].avgRating * 10) / 10 }
-                    );
-                }
-            }
-            
-            // Update liked percentage
-            const interactionStats = await History.aggregate([
-                { 
-                    $match: { 
-                        [`${itemType.toLowerCase()}_id`]: mongoose.Types.ObjectId(itemId)
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalInteractions: { $sum: 1 },
-                        likes: { 
-                            $sum: { 
-                                $cond: [
-                                    { $in: ['$action', ['like', 'bookmark']] },
-                                    1, 
-                                    0
-                                ]
-                            }
-                        },
-                        highRatings: {
-                            $sum: {
-                                $cond: [
-                                    { $gte: ['$rating', 4] },
-                                    1,
-                                    0
-                                ]
-                            }
-                        }
-                    }
-                }
-            ]);
-            
-            if (interactionStats.length > 0) {
-                const stats = interactionStats[0];
-                const likedPercent = Math.round(
-                    ((stats.likes + stats.highRatings) / stats.totalInteractions) * 100
-                );
-                
-                await Model.updateOne(
-                    { _id: itemId },
-                    { likedpercent: likedPercent }
-                );
-            }
-            
+            console.log(`📊 Would update analytics for ${itemType} ${itemId} (demo mode)`);
+            // In real implementation, this would update database
         } catch (error) {
             console.error('❌ Error updating item analytics:', error.message);
-        }
-    }
-    
-    // Helper method: Get user history statistics
-    async getUserHistoryStats(userId) {
-        try {
-            const mongoose = require('mongoose');
-            
-            const stats = await History.aggregate([
-                { $match: { user_id: mongoose.Types.ObjectId(userId) } },
-                {
-                    $group: {
-                        _id: '$action',
-                        count: { $sum: 1 },
-                        avgRating: { $avg: '$rating' }
-                    }
-                }
-            ]);
-            
-            const domainStats = await History.aggregate([
-                { $match: { user_id: mongoose.Types.ObjectId(userId) } },
-                {
-                    $project: {
-                        domain: {
-                            $cond: [
-                                { $ne: ['$movie_id', null] }, 'movies',
-                                { $cond: [
-                                    { $ne: ['$book_id', null] }, 'books', 
-                                    'music'
-                                ]}
-                            ]
-                        }
-                    }
-                },
-                {
-                    $group: {
-                        _id: '$domain',
-                        count: { $sum: 1 }
-                    }
-                }
-            ]);
-            
-            return {
-                actionBreakdown: stats,
-                domainBreakdown: domainStats,
-                totalInteractions: stats.reduce((sum, stat) => sum + stat.count, 0)
-            };
-            
-        } catch (error) {
-            console.error('❌ Error calculating user stats:', error);
-            return { actionBreakdown: [], domainBreakdown: [], totalInteractions: 0 };
         }
     }
 }

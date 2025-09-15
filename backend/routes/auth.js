@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-
+const { authenticateToken, requireRole, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // Rate limiting for auth endpoints (prevent brute force attacks)
@@ -278,55 +278,6 @@ router.post('/login',
   }
 );
 
-// JWT Verification middleware (export this for other routes)
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: 'ACCESS_TOKEN_REQUIRED',
-        message: 'Access token is required'
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      console.log('🚫 Token verification failed:', err.message);
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'INVALID_TOKEN',
-          message: 'Invalid or expired token'
-        },
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    req.user = decoded;
-    next();
-  });
-};
-
-// Optional: Admin-only middleware
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      error: {
-        code: 'ADMIN_REQUIRED',
-        message: 'Admin access required'
-      },
-      timestamp: new Date().toISOString()
-    });
-  }
-  next();
-};
-
 // Token refresh endpoint (optional but recommended)
 router.post('/refresh', authenticateToken, async (req, res) => {
   try {
@@ -397,6 +348,78 @@ router.post('/logout', authenticateToken, async (req, res) => {
     });
   }
 });
+router.get('/admin/users', 
+    authenticateToken, 
+    requireAdmin, 
+    async (req, res) => {
+        try {
+            console.log(`🔍 Admin ${req.user.username} requesting all users`);
+            
+            // Get all users (excluding password)
+            const users = await User.find({}, '-password').sort({ created_at: -1 });
+            
+            res.json({
+                success: true,
+                data: {
+                    message: 'All users retrieved successfully',
+                    users: users,
+                    total_count: users.length,
+                    requested_by: {
+                        admin: req.user.username,
+                        admin_id: req.user.userId
+                    }
+                },
+                timestamp: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error('❌ Error fetching users:', error.message);
+            res.status(500).json({
+                success: false,
+                error: {
+                    code: 'ADMIN_ERROR',
+                    message: 'Failed to fetch users'
+                },
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+);
+
+// Simple admin test endpoint
+router.get('/admin/test', 
+    authenticateToken, 
+    requireAdmin, 
+    async (req, res) => {
+        try {
+            console.log(`🔍 Admin test endpoint accessed by: ${req.user.username}`);
+            
+            res.json({
+                success: true,
+                data: {
+                    message: 'Admin access granted successfully!',
+                    admin_user: req.user.username,
+                    user_id: req.user.userId,
+                    role: req.user.role,
+                    access_level: 'admin'
+                },
+                timestamp: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error('❌ Admin test error:', error.message);
+            res.status(500).json({
+                success: false,
+                error: {
+                    code: 'ADMIN_TEST_ERROR',
+                    message: 'Admin test failed'
+                },
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+);
+
 
 // Export middleware for use in other routes
 module.exports = router;

@@ -1,17 +1,7 @@
 const validateRecommendationRequest = (req, res, next) => {
-    const { userId, domain, count } = req.body;
+    const { domain, count } = req.body;
     
-    // Validate userId
-    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-        return res.status(400).json({
-            success: false,
-            error: {
-                code: 'VALIDATION_ERROR',
-                message: 'userId is required and must be a non-empty string'
-            },
-            timestamp: new Date().toISOString()
-        });
-    }
+    // ✅ REMOVED userId validation - it comes from JWT token via req.user.userId
     
     // Validate domain (optional, but if provided must be valid)
     const validDomains = ['movies', 'books', 'music'];
@@ -41,6 +31,7 @@ const validateRecommendationRequest = (req, res, next) => {
     next();
 };
 
+// Keep validateUserId as is - it's for URL parameters, not body
 const validateUserId = (req, res, next) => {
     const { userId } = req.params;
     
