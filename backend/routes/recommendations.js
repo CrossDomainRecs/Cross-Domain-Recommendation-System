@@ -23,7 +23,7 @@ const recommendationLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use user ID for authenticated requests, IP for others
-    return req.user?.userId || req.ip;
+    return req.user?.userId || rateLimit.ipKeyGenerator(req, true);
   }
 });
 
@@ -40,7 +40,7 @@ const historyLimiter = rateLimit({
     timestamp: new Date().toISOString()
   },
   keyGenerator: (req) => {
-    return req.user?.userId || req.ip;
+    return req.user?.userId || rateLimit.ipKeyGenerator(req, true);
   }
 });
 

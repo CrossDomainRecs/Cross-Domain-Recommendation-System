@@ -20,7 +20,10 @@ const authLimiter = rateLimit({
     timestamp: new Date().toISOString()
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (request) => {
+    return rateLimit.ipKeyGenerator(request, true);
+  }
 });
 
 // Input validation middleware
