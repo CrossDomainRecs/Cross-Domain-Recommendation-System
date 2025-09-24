@@ -1,39 +1,53 @@
 import React, { useState } from 'react';
 import authService from '../services/authService';
-import './Login.css';
+import './Login.css'; // We'll reuse the login styling
 
-function Login() {
+function AdminLogin() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      const data = await authService.login(formData.email, formData.password);
-      // Store the token and user info
+      console.log('Attempting admin login...');
+      const data = await authService.adminLogin(formData.email, formData.password);
+      console.log('Login response:', data);
+      
+      if (data.user.role !== 'admin') {
+        throw new Error('Not authorized as admin');
+      }
+
+      // Store the token and admin status
       localStorage.setItem('token', data.token);
+      localStorage.setItem('isAdmin', 'true');
       localStorage.setItem('username', data.user.username);
-      localStorage.setItem('isAdmin', data.user.role === 'admin');
-      // Navigate based on role
-      window.location.href = data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+      
+      console.log('Admin login successful, redirecting...');
+      // Navigate to admin dashboard
+      window.location.href = '/admin/dashboard';
     } catch (error) {
-      alert(error.message || 'An error occurred during login');
+      console.error('Admin login error:', error);
+      setError(error.message || 'Invalid admin credentials');
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>Login</h2>
+        <h2>Admin Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -57,9 +71,10 @@ function Login() {
               required
             />
           </div>
-          <button type="submit">Login</button>
+          {error && <div className="error-message">{error}</div>}
+          <button type="submit">Login as Admin</button>
           <p className="auth-switch">
-            Don't have an account? <a href="/signup">Sign Up</a>
+            <a href="/login">Regular User Login</a>
           </p>
         </form>
       </div>
@@ -67,4 +82,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default AdminLogin;

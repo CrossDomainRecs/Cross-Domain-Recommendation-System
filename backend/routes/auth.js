@@ -401,6 +401,184 @@ router.post('/logout', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all users (admin only)
+router.get('/users',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const users = await User.find()
+        .select('-password')
+        .sort({ created_at: -1 });
+
+      const processedUsers = users.map(user => {
+        const lastActive = user.last_login || user.created_at;
+        const now = new Date();
+        const daysSinceActive = Math.floor((now - lastActive) / (1000 * 60 * 60 * 24));
+
+        return {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          lastActive: lastActive.toISOString(),
+          status: daysSinceActive <= 30 ? 'active' : 'inactive'
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          users: processedUsers,
+          count: processedUsers.length
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error getting users:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'FETCH_USERS_ERROR',
+          message: 'Failed to retrieve users'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
+
+// Admin: Update user
+router.put('/users/:userId',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+
+      // Don't allow role updates for the last admin
+      if (updates.role === 'user') {
+        const adminCount = await User.countDocuments({ role: 'admin' });
+        const targetUser = await User.findById(userId);
+        if (adminCount === 1 && targetUser.role === 'admin') {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'LAST_ADMIN',
+              message: 'Cannot remove the last admin user'
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+
+      // Don't allow certain fields to be updated
+      delete updates.password;
+      delete updates._id;
+      delete updates.created_at;
+
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: updates },
+        { new: true }
+      ).select('-password');
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found'
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: 'User updated successfully',
+          user
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ User update error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'UPDATE_ERROR',
+          message: 'Failed to update user'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
+
+// Admin: Delete user
+router.delete('/users/:userId',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      // Prevent deleting the last admin
+      const targetUser = await User.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found'
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      if (targetUser.role === 'admin') {
+        const adminCount = await User.countDocuments({ role: 'admin' });
+        if (adminCount === 1) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'LAST_ADMIN',
+              message: 'Cannot delete the last admin user'
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+
+      await User.findByIdAndDelete(userId);
+
+      res.json({
+        success: true,
+        data: {
+          message: 'User deleted successfully',
+          userId
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ User deletion error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'DELETE_ERROR',
+          message: 'Failed to delete user'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
+
 // Export middleware for use in other routes
 module.exports = router;
 module.exports.authenticateToken = authenticateToken;
