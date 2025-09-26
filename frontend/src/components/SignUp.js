@@ -58,11 +58,11 @@ function SignUp() {
         formData.password
       );
       
-      // Store the token and user info
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('username', data.user.username);
-      // Navigate to dashboard
-      window.location.href = '/dashboard';
+  // Store the token and user info
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('username', data.user.username);
+  // Navigate to genre selection page
+  window.location.href = '/genre-selection';
     } catch (error) {
       setError(error.message || 'Registration failed');
     }

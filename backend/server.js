@@ -11,12 +11,16 @@ app.use(express.json());
 
 // Import routes
 const mediaRoutes = require('./routes/media');
+
 const recommendationRoutes = require('./routes/recommendations');
 const authRoutes = require('./routes/auth');
+const historyRoutes = require('./routes/history');
 
 // Use routes
+
 app.use('/api', mediaRoutes);
 app.use('/api', recommendationRoutes);
+app.use('/api/history', historyRoutes);
 app.use('/api/auth', authRoutes);
 
 // Test endpoints

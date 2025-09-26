@@ -23,7 +23,6 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 * {
   box-sizing: border-box;
@@ -48,6 +47,9 @@ body {
   width: 280px;
   background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--dark-bg) 100%);
   color: white;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   padding: 2rem 0;
   display: flex;
   flex-direction: column;
@@ -99,6 +101,8 @@ body {
   gap: 0.5rem;
   padding: 0 1rem;
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-nav button {
@@ -153,18 +157,18 @@ body {
 
 .logout-button {
   margin: 2rem 1rem 0;
-  background: linear-gradient(135deg, var(--danger-color), var(--danger-hover));
-  color: white;
-  border: none;
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: var(--transition);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-  box-shadow: var(--shadow-md);
+     background: var(--danger-color);
+     color: #fff;
+     border: none;
+     padding: 1rem 1.5rem;
+     border-radius: var(--radius-lg);
+     cursor: pointer;
+     transition: background 0.2s;
+     font-weight: 600;
+     text-transform: uppercase;
+     letter-spacing: 0.05em;
+     font-size: 0.875rem;
+     box-shadow: var(--shadow-md);
 }
 
 .logout-button:hover {
@@ -338,11 +342,12 @@ body {
   font-weight: 700;
   margin: 1rem 0;
   font-size: 0.95rem;
+  margin-top: auto;
+  width: calc(100% - 2rem);
 }
-
-.rating::before {
-  content: '⭐';
-  font-size: 1rem;
+ .logout-button:hover {
+  background: var(--danger-hover);
+}
 }
 
 .watch-button {
@@ -505,4 +510,30 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Preferences Section Styles */
+.preferences-container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 32px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.selected-genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.selected-genre-item {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: #007bff;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }

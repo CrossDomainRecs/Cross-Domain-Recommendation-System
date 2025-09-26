@@ -1,0 +1,43 @@
+.genre-selection-container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 32px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin: 24px 0;
+}
+.genre-item {
+  padding: 12px 24px;
+  border-radius: 8px;
+  background: #f0f0f0;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+.genre-item.selected {
+  background: #007bff;
+  color: #fff;
+}
+.continue-btn {
+  margin-top: 24px;
+  padding: 12px 32px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.continue-btn:hover {
+  background: #0056b3;
+}
