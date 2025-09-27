@@ -24,7 +24,7 @@ function Login() {
       localStorage.setItem('username', data.user.username);
       localStorage.setItem('isAdmin', data.user.role === 'admin');
       // Navigate based on role
-      window.location.href = data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+  window.location.href = data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
     } catch (error) {
       alert(error.message || 'An error occurred during login');
     }

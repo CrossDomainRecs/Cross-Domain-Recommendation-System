@@ -1,12 +1,22 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+
+const config = require('./config');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+// app.use(cors());
+
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://192.168.29.92:3000'
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Import routes
@@ -51,10 +61,13 @@ app.get('/api/status', (req, res) => {
 });
 
 // Database connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cross-domain-recs';
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB connected successfully'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose.connect(config.MONGODB_URI)
+  .then(() => {
+    console.log(`✅ MongoDB connected successfully to ${config.MONGODB_URI}`);
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });
 
 // Global error handler
 app.use((error, req, res, next) => {
@@ -70,11 +83,11 @@ app.use((error, req, res, next) => {
 });
 
 // Server startup
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`🎯 Backend server running on http://localhost:${PORT}`);
-  console.log(`📊 Test endpoint: http://localhost:${PORT}/api/test`);
-  console.log(`📋 Status endpoint: http://localhost:${PORT}/api/status`);
-  console.log(`🎬 Recommendations: http://localhost:${PORT}/api/recommendations`);
+app.listen(config.PORT, '0.0.0.0',() => {
+  console.log(`🎯 Backend server running on http://localhost:${config.PORT}`);
+  console.log(`📊 Test endpoint: http://localhost:${config.PORT}/api/test`);
+  console.log(`Frontend client URL: ${config.CLIENT_URL}`);
+  console.log(`📋 Status endpoint: http://localhost:${config.PORT}/api/status`);
+  console.log(`JWT Secret: ${config.JWT_SECRET ? 'Loaded' : 'Missing'}`);
+  console.log(`🎬 Recommendations: http://localhost:${config.PORT}/api/recommendations`);
 });

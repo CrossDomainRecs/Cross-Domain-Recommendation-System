@@ -14,6 +14,10 @@ function App() {
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [genresChosen, setGenresChosen] = useState(false);
 
+  // Helper to check auth and genre selection status
+  const isLoggedIn = !!localStorage.getItem('token');
+  const hasSelectedGenres = localStorage.getItem('genresChosen') === 'true';
+
   return (
     <Router>
       <div className="App">
@@ -27,7 +31,11 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/genre-selection" element={
-            <GenreSelection setSelectedGenres={genres => { setSelectedGenres(genres); setGenresChosen(true); }} />
+            <GenreSelection setSelectedGenres={genres => {
+              setSelectedGenres(genres);
+              setGenresChosen(true);
+              localStorage.setItem('genresChosen', 'true');
+            }} />
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -35,7 +43,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/" element={
-            <Navigate to={isAdmin ? "/admin/dashboard" : (genresChosen ? "/dashboard" : "/genre-selection")} />
+            <Navigate to={isLoggedIn ? "/dashboard" : "/login"} />
           } />
         </Routes>
       </div>

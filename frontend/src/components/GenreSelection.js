@@ -20,6 +20,7 @@ function GenreSelection({ setSelectedGenres }) {
 
   const handleContinue = () => {
     setSelectedGenres(selected);
+    localStorage.setItem('genresChosen', 'true');
     navigate('/dashboard');
   };
 

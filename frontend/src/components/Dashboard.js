@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function Dashboard({ selectedGenres = [] }) {
   const [historyBooks, setHistoryBooks] = useState([]);
@@ -11,7 +12,7 @@ function Dashboard({ selectedGenres = [] }) {
   const fetchBooks = React.useCallback(() => {
     setLoadingBooks(true);
     setBooksError('');
-    fetch('http://localhost:5000/api/books')
+    fetch(`${API_URL}/books`)
       .then(res => res.json())
       .then(data => {
         const shuffled = shuffleArray(data.data || []);
@@ -45,7 +46,7 @@ function Dashboard({ selectedGenres = [] }) {
   useEffect(() => {
     const email = localStorage.getItem('email');
     if (activeSection === 'history' && email) {
-      fetch(`http://localhost:5000/api/history/${email}`)
+      fetch(`${API_URL}/history/${email}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && Array.isArray(data.histories)) {
