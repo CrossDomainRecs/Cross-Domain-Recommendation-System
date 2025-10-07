@@ -72,51 +72,31 @@ function Dashboard({ selectedGenres = [] }) {
     localStorage.setItem('favouriteBooks', JSON.stringify(favouriteBooks));
   }, [favouriteBooks]);
 
-  // Sample movie data (replace with actual API calls later)
-  const sampleMovies = [
-    {
-      id: 1,
-      title: "Inception",
-      genre: "Sci-Fi",
-      rating: 4.8,
-      imageUrl: "https://via.placeholder.com/150x225"
-    },
-    {
-      id: 2,
-      title: "The Shawshank Redemption",
-      genre: "Drama",
-      rating: 4.9,
-      imageUrl: "https://via.placeholder.com/150x225"
-    },
-    {
-      id: 3,
-      title: "The Dark Knight",
-      genre: "Action",
-      rating: 4.7,
-      imageUrl: "https://via.placeholder.com/150x225"
-    },
-    {
-      id: 4,
-      title: "Pulp Fiction",
-      genre: "Crime",
-      rating: 4.6,
-      imageUrl: "https://via.placeholder.com/150x225"
-    },
-    {
-      id: 5,
-      title: "Forrest Gump",
-      genre: "Drama",
-      rating: 4.8,
-      imageUrl: "https://via.placeholder.com/150x225"
-    },
-    {
-      id: 6,
-      title: "The Matrix",
-      genre: "Sci-Fi",
-      rating: 4.7,
-      imageUrl: "https://via.placeholder.com/150x225"
+  // Movies state and fetch
+  const [movies, setMovies] = useState([]);
+  const [loadingMovies, setLoadingMovies] = useState(false);
+  const [moviesError, setMoviesError] = useState('');
+
+  const fetchMovies = React.useCallback(() => {
+    setLoadingMovies(true);
+    setMoviesError('');
+    fetch(`${API_URL}/movies`)
+      .then(res => res.json())
+      .then(data => {
+        setMovies(data.data || []);
+        setLoadingMovies(false);
+      })
+      .catch(() => {
+        setMoviesError('Failed to fetch movies');
+        setLoadingMovies(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (activeSection === 'movies' && movies.length === 0) {
+      fetchMovies();
     }
-  ];
+  }, [activeSection, fetchMovies, movies.length]);
 
   const username = localStorage.getItem('username') || 'User';
   const email = localStorage.getItem('email') || '';
@@ -179,7 +159,47 @@ function Dashboard({ selectedGenres = [] }) {
       </aside>
 
       <main className="main-content">
-        {activeSection === 'books' ? (
+        {activeSection === 'movies' ? (
+          <div>
+            <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h1>Recommended Movies</h1>
+              <button
+                style={{ padding: '8px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                onClick={fetchMovies}
+                disabled={loadingMovies}
+              >Refresh</button>
+            </div>
+            {loadingMovies ? (
+              <p>Loading movies...</p>
+            ) : moviesError ? (
+              <p style={{ color: 'red' }}>{moviesError}</p>
+            ) : (
+              <div className="movies-grid">
+                {movies.length > 0 ? movies.map(movie => (
+                  <div key={movie._id} className="movie-card">
+                    {movie.Poster_Url ? (
+                      <img
+                        src={movie.Poster_Url}
+                        alt={movie.title || movie.Title}
+                        style={{ width: '100%', height: '225px', objectFit: 'cover', borderRadius: '8px 8px 0 0' }}
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                    ) : null}
+                    <div className="movie-info">
+                      <h3>{movie.title || movie.Title}</h3>
+                      <div className="rating">★ {movie.Vote_Average !== undefined ? movie.Vote_Average : (movie.avg_rating || movie.avgrating || 0)}</div>
+                      <p className="desc">{
+                        movie.Overview
+                          ? movie.Overview.split(' ').slice(0, 20).join(' ') + (movie.Overview.split(' ').length > 20 ? '...' : '')
+                          : (movie.description ? movie.description.split(' ').slice(0, 20).join(' ') + (movie.description.split(' ').length > 20 ? '...' : '') : '')
+                      }</p>
+                    </div>
+                  </div>
+                )) : <p>No movies found.</p>}
+              </div>
+            )}
+          </div>
+        ) : activeSection === 'books' ? (
           <div>
             <div className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h1>Recommended Books</h1>
@@ -240,7 +260,7 @@ function Dashboard({ selectedGenres = [] }) {
                                     return updated;
                                   });
                                   // Send to backend
-                                  fetch('http://localhost:5000/api/history', {
+                                  fetch(`${API_URL}/history`, {
                                     method: 'POST',
                                     headers: {
                                       'Content-Type': 'application/json'
@@ -457,32 +477,7 @@ function Dashboard({ selectedGenres = [] }) {
               </div>
             </div>
 
-            <div className="movies-grid">
-              {sampleMovies.map(movie => (
-                <div key={movie.id} className="movie-card">
-                  {movie.imageUrl ? (
-                    <img 
-                      src={movie.imageUrl} 
-                      alt={movie.title}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div className="no-image-placeholder" style={{ display: !movie.imageUrl ? 'flex' : 'none' }}>
-                    <span className="movie-title-placeholder">{movie.title}</span>
-                    <span>No Image Available</span>
-                  </div>
-                  <div className="movie-info">
-                    <h3>{movie.title}</h3>
-                    <p>{movie.genre}</p>
-                    <div className="rating">★ {movie.rating}</div>
-                    <button className="watch-button">Rate Now</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Removed old sampleMovies rendering block */}
           </>
         )}
       </main>

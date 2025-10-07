@@ -18,7 +18,10 @@ router.post('/history', async (req, res) => {
     // Create history document with user_id
     const history = new History({
       user_id: user._id,
+      username: user.username,
+      useremail: user.email,
       book_id: book._id,
+      bookname: book.title,
       action: 'completed',
       timestamp: new Date(),
       rating: book.rating || undefined

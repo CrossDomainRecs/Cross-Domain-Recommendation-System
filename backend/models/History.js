@@ -6,6 +6,14 @@ const historySchema = new mongoose.Schema({
     ref: 'User', 
     required: true 
   },
+  username: {
+    type: String,
+    required: true
+  },
+  useremail: {
+    type: String,
+    required: true
+  },
   movie_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Movie' 
@@ -13,6 +21,10 @@ const historySchema = new mongoose.Schema({
   book_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Book' 
+  },
+  bookname: {
+    type: String,
+    required: true
   },
   music_id: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -25,7 +37,7 @@ const historySchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['view', 'like', 'rate', 'bookmark'],
+    enum: ['view', 'like', 'rate', 'bookmark', 'completed'],
     default: 'view'
   },
   timestamp: { 

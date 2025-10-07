@@ -10,13 +10,9 @@ import GenreSelection from './components/GenreSelection';
 import './App.css';
 
 function App() {
-  const isAdmin = localStorage.getItem('isAdmin') === 'true';
   const [selectedGenres, setSelectedGenres] = useState([]);
-  const [genresChosen, setGenresChosen] = useState(false);
-
-  // Helper to check auth and genre selection status
+  // ...existing code...
   const isLoggedIn = !!localStorage.getItem('token');
-  const hasSelectedGenres = localStorage.getItem('genresChosen') === 'true';
 
   return (
     <Router>
@@ -33,7 +29,6 @@ function App() {
           <Route path="/genre-selection" element={
             <GenreSelection setSelectedGenres={genres => {
               setSelectedGenres(genres);
-              setGenresChosen(true);
               localStorage.setItem('genresChosen', 'true');
             }} />
           } />
