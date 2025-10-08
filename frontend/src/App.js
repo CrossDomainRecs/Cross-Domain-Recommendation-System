@@ -12,7 +12,7 @@ function App() {
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
   return (
-    <Router>
+    <Router>  
       <div className="App">
         <Routes>
           <Route path="/login" element={<Login />} />
