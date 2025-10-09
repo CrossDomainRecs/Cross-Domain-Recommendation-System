@@ -91,6 +91,12 @@ export const authService = {
         body: JSON.stringify({ email, password })
       });
       
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned an invalid response. Please check if the backend is running.');
+      }
+      
       const data = await response.json();
       
       if (!data.success) {
@@ -103,19 +109,36 @@ export const authService = {
       
       return data.data;
     } catch (error) {
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
       throw error;
     }
   },
 
   login: async (email, password) => {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const url = `${API_URL}/auth/login`;
+      console.log('Login URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password })
       });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned an invalid response. Please check if the backend is running.');
+      }
       
       const data = await response.json();
       
@@ -125,13 +148,20 @@ export const authService = {
       
       return data.data;
     } catch (error) {
+      console.error('Login error:', error);
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
       throw error;
     }
   },
 
   register: async (username, email, password) => {
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const url = `${API_URL}/auth/register`;
+      console.log('Register URL:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,6 +177,17 @@ export const authService = {
         })
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned an invalid response. Please check if the backend is running.');
+      }
+      
       const data = await response.json();
       
       if (!data.success) {
@@ -155,6 +196,10 @@ export const authService = {
       
       return data.data;
     } catch (error) {
+      console.error('Register error:', error);
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to server. Please check if the backend is running.');
+      }
       throw error;
     }
   },

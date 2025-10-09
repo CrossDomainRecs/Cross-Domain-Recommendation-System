@@ -46,7 +46,6 @@ function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
@@ -58,16 +57,28 @@ function SignUp() {
         formData.password
       );
       
-  // Store the token and user info
-  localStorage.setItem('token', data.token);
-  localStorage.setItem('username', data.user.username);
-  // Navigate to genre selection page
-  window.location.href = '/genre-selection';
+      // Debug: Log the response data
+      console.log('Registration response:', data);
+      console.log('User data:', data.user);
+      
+      // Store the token and user info
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.user.username);
+      localStorage.setItem('email', data.user.email);
+      
+      // Debug: Verify localStorage
+      console.log('Saved to localStorage:', {
+        token: localStorage.getItem('token'),
+        username: localStorage.getItem('username'),
+        email: localStorage.getItem('email')
+      });
+      
+      // Navigate to genre selection page
+      window.location.href = '/genre-selection';
     } catch (error) {
       setError(error.message || 'Registration failed');
     }
   };
-
   return (
     <div className="login-container">
       <div className="login-box">

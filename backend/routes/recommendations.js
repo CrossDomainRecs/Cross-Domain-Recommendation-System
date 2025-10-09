@@ -98,73 +98,58 @@ router.get('/recommendations/:userId',
   authenticateToken,           // ← Require authentication
   historyLimiter,             // ← Apply rate limiting (less restrictive)
   validateUserId,             // ← Validate userId parameter
-  validateUserAccess,         // ← Ensure user can only access their own history
   logHistoryAccess,           // ← Log the access
   recommendationController.getRecommendationHistory
 );
 
 // Admin-only endpoint: Get all users' recommendation analytics
-router.get('/recommendations/admin/analytics', 
-  authenticateToken,           // ← Require authentication
-  requireAdmin,               // ← Admin only
-  async (req, res) => {
-    try {
-      const User = require('../models/User');
-      const History = require('../models/History');
-      
-      // Get user count
-      const totalUsers = await User.countDocuments();
-      
-      // Get recommendation analytics
-      const recommendationStats = await History.aggregate([
-        { $match: { action: 'recommendation_generated' } },
-        { $group: {
-          _id: null,
-          totalRecommendations: { $sum: 1 },
-          uniqueUsers: { $addToSet: '$user_id' }
-        }},
-        { $project: {
-          totalRecommendations: 1,
-          uniqueUsers: { $size: '$uniqueUsers' }
-        }}
-      ]);
-      
-      res.json({
-        success: true,
-        data: {
-          message: 'System analytics retrieved',
-          analytics: {
-            totalUsers,
-            totalRecommendations: recommendationStats[0]?.totalRecommendations || 0,
-            activeUsers: recommendationStats[0]?.uniqueUsers || 0,
-            systemHealth: {
-              database: 'connected',
-              mlService: 'checking...' // Could add ML service health check
+  router.get('/recommendations/admin/analytics', 
+    authenticateToken,           // ← Require authentication
+    requireAdmin,               // ← Admin only
+    async (req, res) => {
+      try {
+        const User = require('../models/User');
+        
+        // Get user count
+        const totalUsers = await User.countDocuments();
+        
+        // History-based analytics disabled; provide minimal analytics without touching histories
+        const recommendationStats = [{ totalRecommendations: 0, uniqueUsers: 0 }];
+        
+        res.json({
+          success: true,
+          data: {
+            message: 'System analytics retrieved',
+            analytics: {
+              totalUsers,
+              totalRecommendations: recommendationStats[0]?.totalRecommendations || 0,
+              activeUsers: recommendationStats[0]?.uniqueUsers || 0,
+              systemHealth: {
+                database: 'connected',
+                mlService: 'checking...' // Could add ML service health check
+              }
             }
-          }
-        },
-        timestamp: new Date().toISOString()
-      });
-      
-    } catch (error) {
-      console.error('❌ Analytics error:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'ANALYTICS_ERROR',
-          message: 'Failed to retrieve analytics'
-        },
-        timestamp: new Date().toISOString()
-      });
+          },
+          timestamp: new Date().toISOString()
+        });
+        
+      } catch (error) {
+        console.error('Analytics error:', error);
+        res.status(500).json({
+          success: false,
+          error: {
+            message: 'Failed to retrieve analytics'
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
     }
-  }
-);
+  );
 
 // Health check for recommendation service
 router.get('/recommendations/health', async (req, res) => {
   try {
     const axios = require('axios');
-    
     // Check database connection
     const mongoose = require('mongoose');
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
@@ -11,8 +11,19 @@ import './App.css';
 
 function App() {
   const [selectedGenres, setSelectedGenres] = useState([]);
-  // ...existing code...
   const isLoggedIn = !!localStorage.getItem('token');
+
+  // Restore genres from localStorage when app loads
+  useEffect(() => {
+    const savedGenres = localStorage.getItem('favouriteGenres');
+    if (savedGenres) {
+      try {
+        setSelectedGenres(JSON.parse(savedGenres));
+      } catch (error) {
+        console.error('Error parsing saved genres from localStorage:', error);
+      }
+    }
+  }, []);
 
   return (
     <Router>

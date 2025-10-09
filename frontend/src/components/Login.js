@@ -22,9 +22,10 @@ function Login() {
       // Store the token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('username', data.user.username);
+      localStorage.setItem('email', data.user.email);
       localStorage.setItem('isAdmin', data.user.role === 'admin');
       // Navigate based on role
-  window.location.href = data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+      window.location.href = data.user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
     } catch (error) {
       alert(error.message || 'An error occurred during login');
     }
