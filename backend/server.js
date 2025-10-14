@@ -26,6 +26,8 @@ const authRoutes = require('./routes/auth');
 const favouritesRoutes = require('./routes/favourites');
 const userPreferencesRoutes = require('./routes/userPreferences');
 const userHistoryRoutes = require('./routes/userHistory');
+const adminRoutes = require('./routes/admin');
+const onboardingRoutes = require('./routes/onboarding');
 
 // Use routes
 app.use('/api', mediaRoutes);
@@ -34,6 +36,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api', favouritesRoutes);
 app.use('/api', userPreferencesRoutes);
 app.use('/api', userHistoryRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // Test endpoints
 app.get('/api/test', (req, res) => {
