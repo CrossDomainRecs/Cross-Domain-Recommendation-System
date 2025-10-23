@@ -164,3 +164,7 @@ remove_large_files.sh
 data/splits/
 data/interim/matrices/
 weaviate_backup/
+mongo_credentials.txt
+weaviate_credentials.txt
+upload_to_weaviate_cloud_v4.py
+*.txt
