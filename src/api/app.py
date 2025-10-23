@@ -4,6 +4,7 @@ Exposes all recommendation functionality via REST API
 """
 
 import sys
+import os
 from pathlib import Path
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -113,7 +114,7 @@ def index():
     })
 
 if __name__ == '__main__':
-    port = config.get('flask_api', {}).get('port', 5001)
+    port = int(os.environ.get('PORT', config.get('flask_api', {}).get('port', 5001)))
     debug = config.get('application', {}).get('debug', True)
     
     print("=" * 60)
