@@ -15,7 +15,7 @@ gunicorn==21.2.0
 # Database & Storage
 # ================================
 pymongo==4.14.1
-weaviate-client==4.9.7
+weaviate-client==4.17.0
 redis==6.4.0
 
 # ================================
