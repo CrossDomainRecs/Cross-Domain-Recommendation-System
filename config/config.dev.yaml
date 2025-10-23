@@ -1,0 +1,14 @@
+# Development environment overrides
+
+api:
+  flask:
+    debug: true
+  backend:
+    debug: true
+
+logging:
+  level: "DEBUG"
+
+database:
+  mongodb:
+    uri: "mongodb://localhost:27017/reclab"

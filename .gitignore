@@ -1,0 +1,166 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.pyc
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+
+# ====================
+# DATA FILES (CRITICAL - These are HUGE!)
+# ====================
+
+# Raw data
+data/raw/*.jsonl
+data/raw/*.gz
+data/raw/*.csv
+
+# Processed data
+data/processed/
+data/interim/
+
+# Data splits (VERY LARGE!)
+data/splits/*.csv
+data/splits/*.jsonl
+data/splits/*.json
+
+# Embeddings
+data/embeddings/
+
+# Any pickle files
+*.pkl
+*.npy
+
+# ====================
+# MODEL FILES (Large binary files)
+# ====================
+models/**/*.pth
+models/**/*.pt
+models/**/*.h5
+models/**/*.pkl
+*.pth
+*.pt
+*.h5
+
+# ====================
+# BACKUP FILES (Large)
+# ====================
+weaviate_backup/
+*.backup
+backups/
+
+# Logs
+logs/
+*.log
+
+# Environment Variables (CRITICAL: Contains secrets!)
+.env
+.env.local
+.env.production
+.env.*.local
+# Keep .env.example - it's just a template
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.code-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Node.js / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Frontend Build Output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+notebooks/.ipynb_checkpoints/
+
+# Docker
+.dockerignore
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary Files
+*.bak
+*.tmp
+*.temp
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# User Uploads
+backend/uploads/profiles/*.jpeg
+backend/uploads/profiles/*.jpg
+backend/uploads/profiles/*.png
+
+# Coverage Reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# System diagnostic files
+system_diagnostic.py
+analyze_git_status.sh
+remove_large_files.sh
+# Large data files
+data/splits/
+data/interim/matrices/
+weaviate_backup/

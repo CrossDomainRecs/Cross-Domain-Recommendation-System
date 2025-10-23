@@ -1,0 +1,106 @@
+# RecLab Configuration
+
+# Data Processing
+data:
+  domains:
+    - books
+    - movies
+    - music
+  
+  filtering:
+    min_user_reviews: 3
+    min_item_reviews: 5
+    min_rating: 1.0
+    verified_purchase_only: true
+    start_year: 2020
+  
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  
+  # Data paths
+  paths:
+    raw_data: "data/raw"
+    processed_data: "data/processed"
+    interim_data: "data/interim"
+    splits: "data/splits"
+    embeddings: "data/embeddings"
+
+# Model Configuration
+models:
+  gnn:
+    hidden_dim: 128
+    num_layers: 3
+    dropout: 0.3
+    aggregator: "mean"
+    checkpoint_path: "models/gnn/best_model.pth"
+  
+  drl:
+    state_dim: 256
+    action_dim: 1000
+    gamma: 0.99
+    epsilon: 0.1
+    checkpoint_path: "models/drl/best_agent.pth"
+  
+  embeddings:
+    dim: 768
+    model_name: "all-MiniLM-L6-v2"
+    cache_dir: "models/embeddings"
+
+# Training
+training:
+  epochs: 50
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 1e-5
+  early_stopping_patience: 10
+  device: "cuda"
+
+# Evaluation
+evaluation:
+  top_k: [5, 10, 20]
+  metrics:
+    - precision
+    - recall
+    - ndcg
+    - hit_rate
+
+# API
+api:
+  flask:
+    host: "0.0.0.0"
+    port: 5001
+    debug: true
+  backend:
+    host: "0.0.0.0"
+    port: 3000
+    cors_origins: 
+      - "http://localhost:3001"
+      - "http://localhost:3000"
+
+# Database Configuration
+database:
+  mongodb:
+    uri: "${MONGODB_URI}"  # Will be replaced with env var
+    database: "reclab"
+    collections:
+      users: "users"
+      reviews: "reviews"
+      products: "product_metadata"
+      preferences: "user_preferences"
+      cache: "external_items_cache"
+  
+  weaviate:
+    url: "${WEAVIATE_URL}"
+    enabled: true
+  
+  redis:
+    url: "${REDIS_URL}"
+    enabled: false
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "reclab.log"
+
