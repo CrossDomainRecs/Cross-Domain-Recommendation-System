@@ -65,7 +65,6 @@ services:
   - type: web
     name: reclab-frontend
     env: static
-    region: oregon
     plan: free
     branch: production
     rootDir: frontend
