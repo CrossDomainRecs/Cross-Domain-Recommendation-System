@@ -9,6 +9,11 @@ require('dotenv').config();
 
 const app = express();
 
+// =======================================================
+// ✅ FIX 1: Trust Render's proxy (for X-Forwarded-For headers)
+// =======================================================
+app.set('trust proxy', 1);
+
 // ========================
 // Create uploads directory
 // ========================
@@ -84,25 +89,21 @@ app.use(
   })
 );
 
-
-
 // ========================
-// CORS Configuration
+// ✅ FIX 2: CORS Configuration (Updated)
 // ========================
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://reclab-frontend.onrender.com',
-    'https://reclab-production.onrender.com',
+    'https://reclab-frontend.onrender.com',     // ✅ Added
+    'https://reclab-production.onrender.com',   // ✅ Already included
     process.env.FRONTEND_URL
 ].filter(Boolean); // Remove undefined values
 
 app.use(cors({
     origin: function(origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
-        
         if (allowedOrigins.includes(origin) || origin.includes('onrender.com')) {
             callback(null, true);
         } else {
@@ -168,23 +169,17 @@ app.get('/health', (req, res) => {
 // ========================
 const frontendPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendPath)) {
-    // Serve static files
     app.use(express.static(frontendPath));
     console.log('✅ Serving frontend from backend');
     
-    // SPA Fallback - Must be AFTER API routes
     app.use((req, res, next) => {
-        // Skip API and uploads routes
         if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/health')) {
             return next();
         }
-        
-        // Send index.html for all other routes
         const indexPath = path.join(frontendPath, 'index.html');
         if (fs.existsSync(indexPath)) {
             return res.sendFile(indexPath);
         }
-        
         res.status(404).send('Frontend not found');
     });
 } else {
@@ -216,7 +211,7 @@ app.listen(PORT, () => {
     console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   Flask ML API: ${FLASK_API_URL}`);
     console.log(`   MongoDB: ${process.env.MONGODB_URI.includes('localhost') ? 'Local' : 'Cloud'}`);
-    console.log(`   CORS allowed: localhost:3000, localhost:5173, localhost:5174, localhost:5000`);
+    console.log(`   CORS allowed: ${allowedOrigins.join(', ')}`);
     console.log(`   Uploads directory: ${uploadsDir}`);
     console.log(`   Frontend build: ${fs.existsSync(frontendPath) ? '✅ Found' : '⚠️  Not found'}`);
     console.log('='.repeat(60));
