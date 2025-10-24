@@ -3,7 +3,7 @@ services:
   # 1. Flask ML API Service
   - type: web
     name: reclab-ml-api
-    runtime: python
+    env: python
     region: oregon
     plan: free
     branch: production
@@ -22,6 +22,10 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GOOGLE_GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_BOOKS_API_KEY
+        sync: false
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET
@@ -33,7 +37,7 @@ services:
   # 2. Node.js Backend Service  
   - type: web
     name: reclab-backend
-    runtime: node
+    env: node
     region: oregon
     plan: free
     branch: production
@@ -43,22 +47,24 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: JWT_EXPIRE
+        value: 7d
       - key: FLASK_API_URL
         fromService:
           type: web
           name: reclab-ml-api
           envVarKey: RENDER_EXTERNAL_URL
-    healthCheckPath: /health
-
+    
   # 3. React Frontend (Static Site)
   - type: web
     name: reclab-frontend
-    runtime: static
-    region: oregon
+    env: static
     plan: free
     branch: production
     rootDir: frontend
