@@ -87,12 +87,32 @@ app.use(
 
 
 // ========================
-// CORS configuration
+// CORS Configuration
 // ========================
-app.use(cors({
-    origin: '*', // accept requests from any origin
-}));
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://reclab-frontend.onrender.com',
+    'https://reclab-production.onrender.com',
+    process.env.FRONTEND_URL
+].filter(Boolean); // Remove undefined values
 
+app.use(cors({
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin) || origin.includes('onrender.com')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // ========================
 // Rate limiting

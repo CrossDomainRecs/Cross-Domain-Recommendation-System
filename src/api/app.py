@@ -20,20 +20,23 @@ from src.utils.config import get_config
 # Initialize Flask app
 app = Flask(__name__)
 
-# ✅ FIXED: Enable CORS for React frontend - Added localhost:5173
+# ✅ CORS Configuration for Production + Development
 CORS(app, resources={
     r"/api/*": {
         "origins": [
             "http://localhost:3000",
             "http://localhost:3001",
-            "http://localhost:5173",  # ✅ ADDED THIS
-            "http://localhost:5174"
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "https://reclab-frontend.onrender.com",  # ✅ Production frontend
+            "https://*.onrender.com"                  # ✅ Any Render preview deploys
         ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # ✅ Added OPTIONS
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True  # ✅ Added this
+        "supports_credentials": True
     }
 })
+
 
 # Initialize cache
 cache = init_cache(app)
