@@ -6,7 +6,7 @@ services:
     env: python
     region: oregon
     plan: free
-    branch: production
+    branch: deploy-v1
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 src.api.app:app
     envVars:
@@ -40,7 +40,7 @@ services:
     env: node
     region: oregon
     plan: free
-    branch: production
+    branch: deploy-v1
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
@@ -65,8 +65,7 @@ services:
   - type: web
     name: reclab-frontend
     env: static
-    plan: free
-    branch: production
+    branch: deploy-v1
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
