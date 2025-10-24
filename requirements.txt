@@ -73,3 +73,4 @@ pydantic==2.11.7
 # - Only includes what RecLab actually imports
 # - Total: ~30 packages vs 300+ in original
 # ================================
+gdown==5.1.0

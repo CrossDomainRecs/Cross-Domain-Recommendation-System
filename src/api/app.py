@@ -12,31 +12,38 @@ from flask_cors import CORS
 # Add this import for cache support
 from src.api.cache import init_cache, cache, get_cache_stats
 
+# ✅ Add model downloader import
+from src.utils.download_models import download_models
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.config import get_config
 
+# ✅ Download models at startup (only in production)
+if os.getenv('FLASK_ENV') == 'production':
+    print("🚀 Production mode: checking for models...")
+    download_models()
+
 # Initialize Flask app
 app = Flask(__name__)
 
-# ✅ CORS Configuration for Production + Development
+# ✅ Universal CORS Configuration for Production + Development
 CORS(app, resources={
-    r"/api/*": {
+    r"/*": {
         "origins": [
             "http://localhost:3000",
             "http://localhost:3001",
             "http://localhost:5173",
             "http://localhost:5174",
             "https://reclab-frontend.onrender.com",  # ✅ Production frontend
-            "https://*.onrender.com"                  # ✅ Any Render preview deploys
+            "https://*.onrender.com"                 # ✅ Any Render preview deploys
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
-
 
 # Initialize cache
 cache = init_cache(app)
@@ -45,14 +52,13 @@ cache = init_cache(app)
 config = get_config()
 
 # Import routes
-from src.api.routes import cold_start, recommendations, explanations, health, drl
+from src.api.routes import cold_start, recommendations, explanations, health, drl, explore
 
 # Register blueprints
 app.register_blueprint(cold_start.bp)
 app.register_blueprint(recommendations.bp)
 app.register_blueprint(explanations.bp)
 app.register_blueprint(health.bp)
-from src.api.routes import explore
 app.register_blueprint(drl.bp)
 app.register_blueprint(explore.bp)
 
@@ -93,6 +99,7 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+    print("❌ Internal Server Error:", error)
     return jsonify({
         'success': False,
         'error': 'Internal server error',
@@ -119,13 +126,13 @@ def index():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', config.get('flask_api', {}).get('port', 5001)))
     debug = config.get('application', {}).get('debug', True)
-    
+
     print("=" * 60)
     print("🚀 RecLab ML API starting...")
     print(f"   Port: {port}")
     print(f"   Debug: {debug}")
     print("=" * 60)
-    
+
     app.run(
         host='0.0.0.0',
         port=port,
