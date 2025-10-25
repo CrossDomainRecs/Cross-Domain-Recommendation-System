@@ -74,3 +74,4 @@ attachInterceptors(mlApi);
 
 // ✅ Export both APIs
 export { api, mlApi };
+export default api;
