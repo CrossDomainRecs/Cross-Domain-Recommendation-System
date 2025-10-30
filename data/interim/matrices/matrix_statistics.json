@@ -1,0 +1,39 @@
+{
+  "train": {
+    "n_interactions": 1318522,
+    "n_users": 338083,
+    "n_items": 142744,
+    "density": 0.0027321603511523945,
+    "avg_user_interactions": 3.952162742614746,
+    "avg_item_interactions": 9.360526084899902
+  },
+  "val": {
+    "n_interactions": 265028,
+    "density": 0.0005491747529015191
+  },
+  "test": {
+    "n_interactions": 265129,
+    "density": 0.0005493840389016513
+  },
+  "graph": {
+    "n_nodes": 480827,
+    "n_edges": 1318522,
+    "is_bipartite": true,
+    "n_components": 1588,
+    "avg_degree": 5.48439251539535
+  },
+  "domains": {
+    "books": {
+      "n_interactions": 962664,
+      "density": 0.0019947732478349006
+    },
+    "movies": {
+      "n_interactions": 353561,
+      "density": 0.0007326274009184464
+    },
+    "music": {
+      "n_interactions": 2297,
+      "density": 4.759702399047608e-06
+    }
+  }
+}
