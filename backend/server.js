@@ -9,13 +9,30 @@ require('dotenv').config();
 
 const app = express();
 
-// =======================================================
-// ✅ FIX 1: Trust Render's proxy (for X-Forwarded-For headers)
-// =======================================================
-app.set('trust proxy', 1);
+// ========================================================================
+// 🔧 DEPLOYMENT MODE TOGGLE - CHANGE THIS ONE LINE!
+// ========================================================================
+// Set to 'local' for local development or 'production' for deployment
+const DEPLOYMENT_MODE = 'production'; // Change to 'production' when deploying
+// ========================================================================
+
+const isLocal = DEPLOYMENT_MODE === 'local';
+const isProduction = DEPLOYMENT_MODE === 'production';
+
+console.log(`\n${'='.repeat(60)}`);
+console.log(`🚀 Running in ${DEPLOYMENT_MODE.toUpperCase()} mode`);
+console.log(`${'='.repeat(60)}\n`);
 
 // ========================
-// Create uploads directory
+// Proxy Settings
+// ========================
+if (isProduction) {
+    app.set('trust proxy', 1);
+    console.log('✅ Proxy trusted (Production mode)');
+}
+
+// ========================
+// Uploads directory
 // ========================
 const uploadsDir = path.join(__dirname, 'uploads/profiles');
 if (!fs.existsSync(uploadsDir)) {
@@ -24,103 +41,94 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // ========================
-// Security middleware with CSP
+// Flask API URL
 // ========================
-const isDevelopment = process.env.NODE_ENV !== 'production';
 const FLASK_API_URL = process.env.FLASK_API_URL || 'http://localhost:5001';
 
+// ========================
+// Security middleware with CSP
+// ========================
+console.log('🔒 Configuring security headers...');
+
+if (isLocal) {
+    // 🏠 LOCAL DEVELOPMENT - NO CSP restrictions
+    app.use(
+        helmet({
+            contentSecurityPolicy: false,
+            crossOriginEmbedderPolicy: false,
+            crossOriginResourcePolicy: false,
+        })
+    );
+    console.log('✅ Security: All CSP disabled for local development');
+} else {
+    // 🌐 PRODUCTION - Strict security with CSP
+    app.use(
+        helmet({
+            crossOriginResourcePolicy: { policy: "cross-origin" },
+            contentSecurityPolicy: {
+                useDefaults: false,
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                    connectSrc: ["'self'", FLASK_API_URL],
+                    imgSrc: [
+                        "'self'",
+                        "data:",
+                        "blob:",
+                        "https:",
+                        "http:",
+                    ],
+                    styleSrc: ["'self'", "'unsafe-inline'"],
+                    fontSrc: ["'self'", "data:"],
+                    frameSrc: ["'self'"],
+                    workerSrc: ["'self'", "blob:"],
+                    mediaSrc: ["'self'", "data:", "https:", "http:", "blob:"],
+                },
+            },
+        })
+    );
+    console.log('✅ Security: CSP enabled (production)');
+}
+
+// ========================
+// CORS Configuration
+// ========================
+const allowedOrigins = isLocal
+    ? [
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'http://localhost:5174',
+      ]
+    : [
+          process.env.FRONTEND_URL,
+          process.env.BACKEND_URL,
+      ].filter(Boolean);
+
 app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "'unsafe-eval'",
-          "https://www.gstatic.com",
-          "https://www.googleapis.com",
-          "https://apis.google.com",
-          "https://www.googletagmanager.com",
-          "https://www.google.com",
-        ],
-        connectSrc: [
-          "'self'",
-          FLASK_API_URL,
-          "http://localhost:5000",
-          "http://localhost:5001",
-          "http://localhost:5173",
-          "ws://localhost:5173",
-          "wss:",
-          "https://firestore.googleapis.com",
-          "https://firebase.googleapis.com",
-          "https://www.googleapis.com",
-          "https://identitytoolkit.googleapis.com",
-          "https://securetoken.googleapis.com",
-        ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https:",
-          "http:",
-          "blob:",
-          "https://m.media-amazon.com",
-          "https://images-na.ssl-images-amazon.com",
-          "https://ui-avatars.com",
-          "https://api.dicebear.com",
-          "https://res.cloudinary.com",
-          "https://www.googleusercontent.com",
-        ],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-        frameSrc: [
-          "'self'",
-          "https://apis.google.com",
-          "https://accounts.google.com",
-          "https://reclab-6493d.firebaseapp.com",
-          "https://reclab-6493d.web.app",
-        ],
-        workerSrc: ["'self'", "blob:"],
-        mediaSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-      },
-    },
-  })
+    cors({
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.indexOf(origin) !== -1 || isLocal) {
+                callback(null, true);
+            } else {
+                console.warn('⚠️  Blocked by CORS:', origin);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    })
 );
 
-// ========================
-// ✅ FIX 2: CORS Configuration (Updated)
-// ========================
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://reclab-frontend.onrender.com',     // ✅ Added
-    'https://reclab-production.onrender.com',   // ✅ Already included
-    process.env.FRONTEND_URL
-].filter(Boolean); // Remove undefined values
-
-app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || origin.includes('onrender.com')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+console.log(`✅ CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
 // ========================
 // Rate limiting
 // ========================
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100
+    max: isLocal ? 1000 : 100,
 });
 app.use('/api/', limiter);
 
@@ -138,12 +146,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ========================
 // MongoDB connection
 // ========================
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+mongoose
+    .connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // ========================
 // API Routes
@@ -160,20 +169,23 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'RecLab Node.js Backend API',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: DEPLOYMENT_MODE,
     });
 });
 
 // ========================
-// Serve frontend production build
+// Serve frontend build
 // ========================
 const frontendPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendPath)) {
     app.use(express.static(frontendPath));
     console.log('✅ Serving frontend from backend');
-    
     app.use((req, res, next) => {
-        if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/health')) {
+        if (
+            req.path.startsWith('/api') ||
+            req.path.startsWith('/uploads') ||
+            req.path.startsWith('/health')
+        ) {
             return next();
         }
         const indexPath = path.join(frontendPath, 'index.html');
@@ -195,9 +207,9 @@ app.use((err, req, res, next) => {
         success: false,
         error: {
             code: 'INTERNAL_SERVER_ERROR',
-            message: isDevelopment ? err.message : 'Internal server error'
+            message: isLocal ? err.message : 'Internal server error',
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
     });
 });
 
@@ -208,10 +220,12 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log('='.repeat(60));
     console.log(`🚀 RecLab Backend Server running on port ${PORT}`);
-    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Mode: ${DEPLOYMENT_MODE.toUpperCase()}`);
     console.log(`   Flask ML API: ${FLASK_API_URL}`);
-    console.log(`   MongoDB: ${process.env.MONGODB_URI.includes('localhost') ? 'Local' : 'Cloud'}`);
-    console.log(`   CORS allowed: ${allowedOrigins.join(', ')}`);
+    console.log(`   MongoDB: ${process.env.MONGODB_URI?.includes('localhost') ? 'Local' : 'Cloud'}`);
+    console.log(`   CORS: ${allowedOrigins.join(', ')}`);
+    console.log(`   Rate limit: ${isLocal ? '1000' : '100'} requests per 15min`);
+    console.log(`   CSP: ${isLocal ? 'DISABLED (local dev)' : 'ENABLED (production)'}`);
     console.log(`   Uploads directory: ${uploadsDir}`);
     console.log(`   Frontend build: ${fs.existsSync(frontendPath) ? '✅ Found' : '⚠️  Not found'}`);
     console.log('='.repeat(60));
