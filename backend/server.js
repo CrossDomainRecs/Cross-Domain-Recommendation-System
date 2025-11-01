@@ -13,7 +13,7 @@ const app = express();
 // 🔧 DEPLOYMENT MODE TOGGLE - CHANGE THIS ONE LINE!
 // ========================================================================
 // Set to 'local' for local development or 'production' for deployment
-const DEPLOYMENT_MODE = 'production'; // Change to 'production' when deploying
+const DEPLOYMENT_MODE = 'local'; // Change to 'production' when deploying
 // ========================================================================
 
 const isLocal = DEPLOYMENT_MODE === 'local';

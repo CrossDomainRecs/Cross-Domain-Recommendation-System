@@ -15,41 +15,33 @@ class GeminiClient:
         self.config = get_config()
         api_key = self.config.get_secret('GOOGLE_GEMINI_API_KEY')
         
-        print(f"🔍 DEBUG: API key exists: {api_key is not None}")
-        print(f"🔍 DEBUG: API key length: {len(api_key) if api_key else 0}")
-        print(f"🔍 DEBUG: API key starts with: {api_key[:10] if api_key else 'NONE'}...")
-        
         if not api_key:
             raise ValueError("GOOGLE_GEMINI_API_KEY not found in environment")
         
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('models/gemini-2.5-flash')
+        self.model = genai.GenerativeModel('models/gemini-2.0-flash-exp')
         
         # Rate limiting (15 requests per minute for free tier)
         self.request_times = []
-        self.max_requests_per_minute = 14  # Stay under 15
+        self.max_requests_per_minute = 14
         self.cache = get_cache()
         
-        print("✅ Gemini client initialized with model: models/gemini-2.5-flash")
+        print("✅ Gemini client initialized with model: models/gemini-2.0-flash-exp")
         print(f"   Rate limit: {self.max_requests_per_minute} requests/min")
     
 
     def _wait_if_rate_limited(self):
         """Wait if we're hitting rate limits"""
         now = time.time()
-        
-        # Remove requests older than 1 minute
         self.request_times = [t for t in self.request_times if now - t < 60]
         
-        # If we've hit the limit, wait
         if len(self.request_times) >= self.max_requests_per_minute:
             wait_time = 60 - (now - self.request_times[0])
             if wait_time > 0:
                 print(f"⏳ Rate limit reached, waiting {wait_time:.1f}s...")
-                time.sleep(wait_time + 0.5)  # Add buffer
+                time.sleep(wait_time + 0.5)
                 self.request_times = []
         
-        # Record this request
         self.request_times.append(now)
     
 
@@ -59,26 +51,39 @@ class GeminiClient:
         return f"gemini:explanation:{hashlib.md5(prompt.encode()).hexdigest()}"
     
 
-    def validate_and_extract(self, user_input: str, domain: str) -> Dict:
-        """Validate user input and extract structured info."""
-        prompt = f"""Analyze: "{user_input}" ({domain}). 
-Return valid JSON with structure:
-{{
-    "is_valid": true/false,
-    "corrected_title": "",
-    "confidence": 0.0-1.0,
-    "genres": [],
-    "themes": [],
-    "similar_items": []
-}}"""
+    def _extract_text_from_response(self, response):
+        """Safely extract text from Gemini response with multiple fallback methods"""
         try:
-            self._wait_if_rate_limited()
-            response = self.model.generate_content(prompt)
-            return json.loads(response.text)
+            # Method 1: Direct text access
+            if hasattr(response, 'text') and response.text:
+                return response.text.strip()
         except Exception as e:
-            print(f"⚠️ Gemini validate_and_extract error: {e}")
-            return {"is_valid": False}
-    
+            print(f"   Method 1 failed: {str(e)[:50]}")
+        
+        try:
+            # Method 2: Through candidates
+            if hasattr(response, 'candidates') and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content'):
+                        content = candidate.content
+                        if hasattr(content, 'parts') and content.parts:
+                            for part in content.parts:
+                                if hasattr(part, 'text') and part.text:
+                                    return part.text.strip()
+        except Exception as e:
+            print(f"   Method 2 failed: {str(e)[:50]}")
+        
+        try:
+            # Method 3: Direct parts access
+            if hasattr(response, 'parts') and response.parts:
+                for part in response.parts:
+                    if hasattr(part, 'text') and part.text:
+                        return part.text.strip()
+        except Exception as e:
+            print(f"   Method 3 failed: {str(e)[:50]}")
+        
+        return None
+
 
     def generate_explanation(
         self,
@@ -87,7 +92,7 @@ Return valid JSON with structure:
         recommendation_source: str = 'hybrid',
         max_retries: int = 2
     ) -> str:
-        """Generate explanation with rate limiting, caching, and retry logic"""
+        """Generate explanation with enhanced error handling"""
 
         # Build prompt
         user_genres = user_profile.get('favorite_genres', [])
@@ -96,46 +101,32 @@ Return valid JSON with structure:
         item_rating = recommended_item.get('rating', 0)
         item_domain = recommended_item.get('domain', 'product')
         
-        # Clean description
-        item_desc = recommended_item.get('description', '')
-        if item_desc:
-            import re
-            item_desc = re.sub(r'[^a-zA-Z0-9\s\.,!?\'-]', '', item_desc)[:150]
-
-        # Domain-specific prompt
-        domain_map = {
-            'movies': 'movie',
-            'music': 'music',
-            'books': 'book',
-        }
+        domain_map = {'movies': 'movie', 'music': 'music', 'books': 'book'}
         domain_name = domain_map.get(item_domain, 'product')
         
-        prompt = f"""Explain in 2 sentences why this recommendation matches the user's interests.
+        prompt = f"""Explain in 2-3 SHORT sentences why this recommendation matches the user.
 
 User likes: {', '.join(user_genres[:3]) if user_genres else f'{domain_name}s'}
-Recommended {domain_name}: {item_title}
-{f"Categories: {', '.join(item_genres[:2])}" if item_genres else ""}
-{f"Rating: {item_rating}/5" if item_rating else ""}
+Recommended: {item_title}
+Genres: {', '.join(item_genres[:2]) if item_genres else 'N/A'}
+Rating: {item_rating}/5 stars
 
-Write a brief, friendly explanation."""
+Write a brief, friendly explanation. Be concise."""
 
-        # Check cache first
+        # Check cache
         cache_key = self._get_cache_key(prompt)
         if self.cache:
             cached = self.cache.get(cache_key)
             if cached:
-                print(f"✅ Cache hit for: {item_title[:50]}...")
+                print(f"✅ Cache hit for: {item_title[:50]}")
                 return cached
 
-        # Try Gemini with retry logic
+        # Try Gemini with retries
         for attempt in range(max_retries + 1):
             try:
-                # Rate limiting
                 self._wait_if_rate_limited()
-                
-                print(f"🔍 Calling Gemini for: {item_title[:50]}... (attempt {attempt + 1}/{max_retries + 1})")
+                print(f"🔍 Calling Gemini for: {item_title[:50]} (attempt {attempt + 1})")
 
-                # Call Gemini
                 response = self.model.generate_content(
                     prompt,
                     safety_settings={
@@ -146,37 +137,20 @@ Write a brief, friendly explanation."""
                     },
                     generation_config={
                         'temperature': 0.7,
-                        'max_output_tokens': 250,
+                        'max_output_tokens': 200,
                     }
                 )
 
-                # Extract text safely
-                if response and hasattr(response, 'text'):
-                    text = response.text.strip()
-                    if text and len(text) > 15:  # Ensure meaningful response
-                        print(f"✅ Gemini success: {text[:60]}...")
-                        
-                        # Cache successful response
-                        if self.cache:
-                            self.cache.set(cache_key, text, 3600)  # Cache 1 hour
-                        
-                        return text
+                # Extract text using multiple methods
+                text = self._extract_text_from_response(response)
                 
-                # Try alternative extraction
-                if response and response.candidates:
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, 'content') and candidate.content:
-                        if hasattr(candidate.content, 'parts') and candidate.content.parts:
-                            text = candidate.content.parts[0].text.strip()
-                            if text and len(text) > 15:
-                                print(f"✅ Gemini success (alt): {text[:60]}...")
-                                if self.cache:
-                                    self.cache.set(cache_key, text, 3600)
-                                return text
-
-                print(f"⚠️ Attempt {attempt + 1}: Empty or short response")
+                if text and len(text) > 15:
+                    print(f"✅ Gemini success: {text[:60]}...")
+                    if self.cache:
+                        self.cache.set(cache_key, text, 3600)
+                    return text
                 
-                # Wait before retry
+                print(f"⚠️ Attempt {attempt + 1}: No valid text extracted")
                 if attempt < max_retries:
                     time.sleep(1.5)
 
@@ -185,28 +159,47 @@ Write a brief, friendly explanation."""
                 if attempt < max_retries:
                     time.sleep(2)
 
-        # Fallback after all retries
-        print(f"⚠️ All Gemini attempts failed, using fallback for {item_title[:50]}...")
+        # Fallback
+        print(f"⚠️ Using fallback for {item_title[:50]}")
         import random
         
-        user_interest = user_genres[0] if user_genres else f'{domain_name}s'
-        item_genre_text = ', '.join(item_genres[:2]) if item_genres else f'{domain_name}'
-        rating_text = f" with {item_rating}/5 stars" if item_rating else ""
+        user_interest = user_genres[0] if user_genres else domain_name
+        item_genre_text = ', '.join(item_genres[:2]) if item_genres else domain_name
         
-        fallback_templates = [
-            f"Since you enjoy {user_interest}, '{item_title}' is a perfect match! This {item_genre_text} {domain_name}{rating_text} aligns with your tastes.",
-            f"You'll love '{item_title}'! As a {user_interest} fan, this {item_genre_text} {domain_name}{rating_text} is right up your alley.",
-            f"Great recommendation! '{item_title}' combines {item_genre_text} excellence that {user_interest} enthusiasts adore{rating_text}.",
-            f"Perfect for you! '{item_title}' delivers outstanding {item_genre_text} content{rating_text} for {user_interest} lovers."
+        fallbacks = [
+            f"Perfect match! '{item_title}' combines {item_genre_text} elements that align with your love for {user_interest}.",
+            f"You'll enjoy '{item_title}'! As a {user_interest} fan, this {item_genre_text} {domain_name} is exactly your style.",
+            f"Great pick! '{item_title}' delivers the {item_genre_text} quality that {user_interest} enthusiasts appreciate.",
         ]
         
-        fallback = random.choice(fallback_templates)
-        
-        # Cache fallback (shorter TTL)
+        fallback = random.choice(fallbacks)
         if self.cache:
-            self.cache.set(cache_key, fallback, 300)  # 5 minutes
+            self.cache.set(cache_key, fallback, 300)
         
         return fallback
+
+
+    def validate_and_extract(self, user_input: str, domain: str) -> Dict:
+        """Validate user input and extract structured info"""
+        prompt = f"""Analyze: "{user_input}" ({domain}). 
+Return valid JSON:
+{{
+    "is_valid": true/false,
+    "corrected_title": "",
+    "confidence": 0.0-1.0,
+    "genres": [],
+    "themes": []
+}}"""
+        try:
+            self._wait_if_rate_limited()
+            response = self.model.generate_content(prompt)
+            text = self._extract_text_from_response(response)
+            if text:
+                return json.loads(text)
+            return {"is_valid": False}
+        except Exception as e:
+            print(f"⚠️ Gemini validate_and_extract error: {e}")
+            return {"is_valid": False}
 
 
 def get_gemini_client():

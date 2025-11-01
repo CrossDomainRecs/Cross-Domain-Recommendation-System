@@ -4,22 +4,31 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- CSP configured for local dev + production -->
     <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.googleapis.com https://apis.google.com;
-      connect-src 'self'
+      default-src 'self' http://localhost:* https://localhost:*;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* https://localhost:* https://www.gstatic.com https://www.googleapis.com https://apis.google.com;
+      connect-src 'self' 
+        http://localhost:5000 
+        http://localhost:5001 
+        http://localhost:5173 
+        https://localhost:* 
         https://reclab-backend-dawg.onrender.com
         https://reclab-api.onrender.com
         https://firestore.googleapis.com
         https://firebase.googleapis.com
         https://www.googleapis.com
         https://identitytoolkit.googleapis.com
-        https://securetoken.googleapis.com;
-      img-src 'self' data: blob: https://www.gstatic.com https://firebasestorage.googleapis.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com data:;
+        https://securetoken.googleapis.com
+        https://generativelanguage.googleapis.com;
+      img-src 'self' data: blob: http: https:;
+      style-src 'self' 'unsafe-inline' http://localhost:* https://localhost:* https://fonts.googleapis.com;
+      font-src 'self' http://localhost:* https://localhost:* https://fonts.gstatic.com data:;
       frame-src 'self' https://apis.google.com https://accounts.google.com;
+      worker-src 'self' blob: http://localhost:* https://localhost:*;
     ">
+
     <title>RecLab - Cross-Domain Recommendations</title>
   </head>
   <body>

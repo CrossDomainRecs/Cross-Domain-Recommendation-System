@@ -1,14 +1,31 @@
 import { mlApi } from './api';
 import api from './api';
 
-// Use the mlApi instance (https://reclab-api.onrender.com)
 const ML_API_URL = import.meta.env.VITE_ML_API_URL || 'https://reclab-api.onrender.com';
 
 export const recommendationService = {
+  // ✅ FIXED: Get recommendations with user profile
   getRecommendations: async (params = {}) => {
     try {
-      const { domain, limit = 20 } = params;
+      const { domain, limit = 20, userProfile } = params;
       
+      // If user profile provided, use Python ML API for cold-start
+      if (userProfile && (userProfile.liked_items?.length > 0 || userProfile.favorite_genres?.length > 0)) {
+        console.log('🎯 Using cold-start recommendations with user profile');
+        
+        const response = await mlApi.post('/api/recommendations/for-new-user', {
+          user_profile: userProfile,
+          limit,
+          domain_filter: domain
+        });
+        
+        if (response.data.success) {
+          return response.data.recommendations || [];
+        }
+      }
+      
+      // Fallback to Node.js backend (shouldn't reach here for new users)
+      console.log('⚠️ Falling back to backend recommendations');
       const response = await api.post('/api/recommendations/get', {
         domain,
         limit

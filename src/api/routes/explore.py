@@ -1,11 +1,20 @@
+"""
+Explore endpoints - Browse and discover items
+"""
+
+import sys
+from pathlib import Path
 from flask import Blueprint, request, jsonify
 from pymongo import MongoClient
 import os
 
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
 bp = Blueprint('explore', __name__, url_prefix='/api/explore')
 
 # MongoDB connection
-mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+mongo_uri = os.getenv('MONGODB_URI') or os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
 mongo_client = MongoClient(mongo_uri)
 db = mongo_client['reclab']
 
@@ -19,7 +28,7 @@ def extract_image_url(images):
         return ''
     
     # Priority order: large, hi_res, 1080w, 720w, 480w, thumb
-    for key in ['large', 'hi_res', '1080w', '720w', '480w', 'thumb']:
+    for key in ['large', 'hi_res', '1920w', '1440w', '1080w', '720w', '480w', '360w', 'thumb']:
         if key in first_image and first_image[key]:
             return first_image[key]
     
@@ -29,7 +38,7 @@ def extract_image_url(images):
 def get_popular_items(domain):
     """Get popular items for a domain"""
     try:
-        limit = int(request.args.get('limit', 20))
+        limit = int(request.args.get('limit', 50))
         
         # Get items, sort by rating if available
         items = list(db['product_metadata'].aggregate([
@@ -74,6 +83,7 @@ def get_popular_items(domain):
         }), 200
         
     except Exception as e:
+        print(f"❌ Error in get_popular_items: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -85,13 +95,15 @@ def search_items(domain):
     """Search items within a domain"""
     try:
         query = request.args.get('q', '')
-        limit = int(request.args.get('limit', 10))
+        limit = int(request.args.get('limit', 50))
         
         if not query:
             return jsonify({
                 'success': True,
                 'items': []
             }), 200
+        
+        print(f"🔍 Searching {domain} for: {query}")
         
         # Search using regex (case-insensitive)
         items = list(db['product_metadata'].find(
@@ -118,6 +130,8 @@ def search_items(domain):
             item['rating'] = item.get('average_rating')
             item['genres'] = item.get('categories', [])
         
+        print(f"✅ Found {len(items)} results")
+        
         return jsonify({
             'success': True,
             'items': items,
@@ -125,6 +139,7 @@ def search_items(domain):
         }), 200
         
     except Exception as e:
+        print(f"❌ Error in search_items: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -155,6 +170,7 @@ def get_genres(domain):
         }), 200
         
     except Exception as e:
+        print(f"❌ Error in get_genres: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -165,7 +181,9 @@ def get_genres(domain):
 def get_items_by_genre(domain, genre):
     """Get items filtered by category/genre"""
     try:
-        limit = int(request.args.get('limit', 20))
+        limit = int(request.args.get('limit', 50))
+        
+        print(f"🎯 Getting {domain} items for genre: {genre}")
         
         # Find items with this category
         items = list(db['product_metadata'].aggregate([
@@ -206,6 +224,8 @@ def get_items_by_genre(domain, genre):
             item['rating'] = item.get('average_rating')
             item['genres'] = item.get('categories', [])
         
+        print(f"✅ Found {len(items)} items")
+        
         return jsonify({
             'success': True,
             'items': items,
@@ -213,6 +233,7 @@ def get_items_by_genre(domain, genre):
         }), 200
         
     except Exception as e:
+        print(f"❌ Error in get_items_by_genre: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

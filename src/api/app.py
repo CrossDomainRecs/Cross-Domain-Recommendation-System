@@ -51,16 +51,17 @@ cache = init_cache(app)
 # Load config
 config = get_config()
 
-# Import routes
-from src.api.routes import cold_start, recommendations, explanations, health, drl, explore
+# ✅ FIXED: Import all routes INCLUDING interactions
+from src.api.routes import cold_start, recommendations, explanations, health, drl, explore, interactions
 
-# Register blueprints
+# ✅ FIXED: Register ALL blueprints including interactions
 app.register_blueprint(cold_start.bp)
 app.register_blueprint(recommendations.bp)
 app.register_blueprint(explanations.bp)
 app.register_blueprint(health.bp)
 app.register_blueprint(drl.bp)
 app.register_blueprint(explore.bp)
+app.register_blueprint(interactions.bp)  # ✅ CRITICAL: DRL training endpoint
 
 # Cache stats endpoint
 @app.route('/api/cache/stats')
@@ -118,6 +119,9 @@ def index():
             'cold_start': '/api/cold-start/*',
             'recommendations': '/api/recommendations/*',
             'explanations': '/api/explanations/*',
+            'interactions': '/api/interactions/*',  # ✅ NEW
+            'drl': '/api/drl/*',
+            'explore': '/api/explore/*',
             'cache_stats': '/api/cache/stats',
             'cache_clear': '/api/cache/clear'
         }
@@ -132,6 +136,13 @@ if __name__ == '__main__':
     print(f"   Port: {port}")
     print(f"   Debug: {debug}")
     print("=" * 60)
+    
+    # ✅ Print all registered routes for debugging
+    print("\n📍 Registered Routes:")
+    for rule in app.url_map.iter_rules():
+        if rule.endpoint != 'static':
+            print(f"   {rule.methods} {rule.rule} -> {rule.endpoint}")
+    print("=" * 60 + "\n")
 
     app.run(
         host='0.0.0.0',

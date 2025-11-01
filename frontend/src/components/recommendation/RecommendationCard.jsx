@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Heart, ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
 import { BackgroundGradient } from '../ui/BackgroundGradient';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -31,27 +31,32 @@ const RecommendationCard = ({ item, onFavorite, onLike, onDislike, onExplain }) 
       <div className="bg-gray-900 rounded-3xl overflow-hidden">
         {/* Image */}
         <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-          {item.image && !imageError ? (
+          {/* ✅ FIXED: Support multiple image formats + fallback */}
+          {((item.images?.[0]?.['1080w'] || item.image) && !imageError) ? (
             <img
-              src={item.image}
+              src={item.images?.[0]?.['1080w'] || item.image || '/placeholder.png'}
               alt={item.title}
               className="w-full h-full object-cover"
               onError={() => setImageError(true)}
             />
           ) : (
-            // ✅ IMPROVED: Fallback UI for missing/broken images
+            // Fallback UI
             <div className="w-full h-full bg-gradient-to-br from-purple-900/80 to-blue-900/80 flex flex-col items-center justify-center gap-2">
               <span className="text-5xl">
-                {item.domain === 'movies' ? '🎬' : 
-                 item.domain === 'books' ? '📚' : 
-                 item.domain === 'music' ? '🎵' : '🎁'}
+                {item.domain === 'movies'
+                  ? '🎬'
+                  : item.domain === 'books'
+                  ? '📚'
+                  : item.domain === 'music'
+                  ? '🎵'
+                  : '🎁'}
               </span>
               <span className="text-white/60 text-xs font-medium px-3 py-1 bg-black/30 rounded-full">
                 {item.domain || 'media'}
               </span>
             </div>
           )}
-          
+
           {/* Favorite Star */}
           <button
             onClick={handleFavorite}
